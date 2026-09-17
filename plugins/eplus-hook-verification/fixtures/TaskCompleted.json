@@ -1,0 +1,12 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "permission_mode": "default",
+  "hook_event_name": "TaskCompleted",
+  "task_id": "task-hooklab-001",
+  "task_subject": "[TICKET-101] Add integration test coverage",
+  "task_description": "Add integration tests for the new endpoint.",
+  "teammate_name": "implementer",
+  "team_name": "session-hooklab-0001"
+}

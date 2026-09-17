@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "plugin": "eplus-model-routing",
+  "notes": "eplus-plugin-catalog eplus-model-routing 0.1.x. note-model and route-check store per-session files under TEMP (redirected into the sandbox).",
+  "cases": [
+    { "id": "note-model-cowork-shape", "event": "SessionStart", "payload": { "source": "startup" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${TEMP}/eplus-model-routing/${SESSION_ID}/payload-keys.txt", "regex": "SessionStart keys: .*session_id" } ] } },
+    { "id": "note-model-with-model", "event": "SessionStart", "payload": { "source": "startup", "model": "claude-opus-5" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${TEMP}/eplus-model-routing/${SESSION_ID}/model.txt", "regex": "claude-opus-5" } ] } },
+    { "id": "note-model-hatch", "event": "SessionStart", "payload": { "model": "claude-opus-5" }, "env": { "EPLUS_NO_MODEL_ROUTING": "1" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${TEMP}/eplus-model-routing/${SESSION_ID}/model.txt", "exists": false } ] } },
+
+    { "id": "route-unknown-first-prompt", "event": "UserPromptSubmit", "payload": { "prompt": "hello" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^\\[model-routing\\] Check the \"Model:\" line" } } },
+    { "id": "route-opus-first-prompt", "event": "UserPromptSubmit", "payload": { "prompt": "hello" },
+      "seed_files": { "${TEMP}/eplus-model-routing/${SESSION_ID}/model.txt": "claude-opus-5\n" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^\\[model-routing\\] This session runs on claude-opus-5" }, "files": [ { "path": "${TEMP}/eplus-model-routing/${SESSION_ID}/routed.flag" } ] } },
+    { "id": "route-sonnet-silent", "event": "UserPromptSubmit", "payload": { "prompt": "hello" },
+      "seed_files": { "${TEMP}/eplus-model-routing/${SESSION_ID}/model.txt": "claude-sonnet-5\n" },
+      "expect": { "stdout": "empty" } },
+    { "id": "route-hatch", "event": "UserPromptSubmit", "payload": { "prompt": "hello" }, "env": { "EPLUS_NO_MODEL_ROUTING": "1" }, "expect": { "stdout": "empty" } },
+
+    { "id": "gate-sonnet-passes-logged", "event": "PreToolUse", "payload": { "tool_name": "Agent" },
+      "payload_replace": { "tool_input": { "subagent_type": "eplus-model-routing:sonnet-standard", "model": "sonnet", "prompt": "x", "description": "d" } },
+      "expect": { "stdout": "empty", "files": [ { "path": "${TEMP}/eplus-model-routing/routing.log", "regex": "subagent_type=eplus-model-routing:sonnet-standard" } ] } },
+    { "id": "gate-opus-asks", "event": "PreToolUse", "payload": { "tool_name": "Agent" },
+      "payload_replace": { "tool_input": { "subagent_type": "general-purpose", "model": "opus", "prompt": "x", "description": "d" } },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "ask" }, "json_regex": { "hookSpecificOutput.permissionDecisionReason": "expensive" } } },
+    { "id": "gate-hatch-still-logs", "event": "PreToolUse", "payload": { "tool_name": "Agent" },
+      "payload_replace": { "tool_input": { "subagent_type": "x", "model": "opus", "prompt": "x", "description": "d" } }, "env": { "EPLUS_ALLOW_EXPENSIVE_SPAWN": "1" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${TEMP}/eplus-model-routing/routing.log", "regex": "model=opus" } ] } }
+  ]
+}

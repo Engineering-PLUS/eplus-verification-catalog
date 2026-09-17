@@ -1,0 +1,25 @@
+{
+  "name": "eplus-verification",
+  "description": "EPLUS verification tooling for Claude Cowork: test suites that prove the production plugins behave on a seat. Enabled on testing profiles only.",
+  "owner": {
+    "name": "Victor Ortega",
+    "email": "victor.ortega@eplusadvisors.com"
+  },
+  "plugins": [
+    {
+      "name": "eplus-hook-verification",
+      "displayName": "EPLUS Hook Verification",
+      "description": "On-demand test suite for every hook in every installed EPLUS plugin. /eplus-hook-verification:verify-hooks replays each wiring against fixtures and expectations on the Windows host and writes the results into the session folder the export zips. Testing profiles only: its trigger hooks cost one PowerShell start per prompt and per Glob call.",
+      "author": {
+        "name": "Victor Ortega",
+        "email": "victor.ortega@eplusadvisors.com"
+      },
+      "version": "0.1.0",
+      "source": "./plugins/eplus-hook-verification",
+      "category": "development",
+      "tags": ["internal", "hooks", "testing", "verification"],
+      "homepage": "https://github.com/Engineering-PLUS/eplus-verification-catalog/tree/main/plugins/eplus-hook-verification",
+      "defaultEnabled": false
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "plugin": "gemini-delegate",
+  "notes": "inject-gemini-key reads CLAUDE_PLUGIN_OPTION_* from the environment and writes CLAUDE_ENV_FILE; every case uses synthetic values inside the sandbox, never a real key.",
+  "cases": [
+    { "id": "inject-direct-key", "event": "SessionStart", "env": { "CLAUDE_ENV_FILE": "${SANDBOX}/env.sh", "CLAUDE_PLUGIN_OPTION_GEMINI_API_KEY": "hv-synthetic-key" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SANDBOX}/env.sh", "regex": "^export GEMINI_API_KEY='hv-synthetic-key'\\nexport GEMINI_DELEGATE_MODE='direct'\\n$" } ] } },
+    { "id": "inject-broker-wins", "event": "SessionStart", "env": { "CLAUDE_ENV_FILE": "${SANDBOX}/env.sh", "CLAUDE_PLUGIN_OPTION_GEMINI_BROKER_URL": "https://b", "CLAUDE_PLUGIN_OPTION_GEMINI_BROKER_TOKEN": "t", "CLAUDE_PLUGIN_OPTION_GEMINI_API_KEY": "k" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SANDBOX}/env.sh", "regex": "GEMINI_BROKER_URL='https://b'[\\s\\S]*GEMINI_DELEGATE_MODE='broker" } ] } },
+    { "id": "inject-unconfigured", "event": "SessionStart", "env": { "CLAUDE_ENV_FILE": "${SANDBOX}/env.sh" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SANDBOX}/env.sh", "regex": "GEMINI_DELEGATE_MODE='unconfigured'" } ] } },
+    { "id": "inject-off-switch", "event": "SessionStart", "env": { "CLAUDE_ENV_FILE": "${SANDBOX}/env.sh", "CLAUDE_GEMINI_DELEGATE_OFF": "1", "CLAUDE_PLUGIN_OPTION_GEMINI_API_KEY": "k" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SANDBOX}/env.sh", "exists": false } ] } },
+
+    { "id": "guard-denies-env", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "payload_replace": { "tool_input": { "command": "env" } },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "deny" }, "json_regex": { "hookSpecificOutput.permissionDecisionReason": "bare environment dump" } } },
+    { "id": "guard-denies-interpolation", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "payload_replace": { "tool_input": { "command": "echo $GEMINI_API_KEY" } },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "deny" } } },
+    { "id": "guard-passes-narrow", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "payload_replace": { "tool_input": { "command": "printenv PATH; set -e; python3 scripts/gemini_task.py 'summarize'" } },
+      "expect": { "stdout": "empty" } },
+    { "id": "guard-off-switch", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "payload_replace": { "tool_input": { "command": "env" } }, "env": { "CLAUDE_GEMINI_DELEGATE_OFF": "1" }, "expect": { "stdout": "empty" } }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "permission_mode": "default",
+  "hook_event_name": "SubagentStop",
+  "stop_hook_active": false,
+  "agent_id": "agent-hooklab-001",
+  "agent_type": "Explore",
+  "agent_transcript_path": "/tmp/hook-lab/project/subagents/agent-hooklab-001.jsonl",
+  "last_assistant_message": "Inventory complete. Found 3 top-level directories and 42 files.",
+  "background_tasks": [],
+  "session_crons": []
+}

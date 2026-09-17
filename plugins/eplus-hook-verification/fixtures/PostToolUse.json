@@ -1,0 +1,18 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/tmp/hook-lab/project/src/example.txt",
+    "content": "hello world\n"
+  },
+  "tool_response": {
+    "filePath": "/tmp/hook-lab/project/src/example.txt",
+    "success": true
+  },
+  "tool_use_id": "toolu_hooklab_002",
+  "duration_ms": 12
+}

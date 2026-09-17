@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "plugin": "punch-subagent",
+  "notes": "vo-plugin-catalog punch-subagent 0.9.0. check-draft-voice reads the file from the HOST, so the case seeds a drafted_items.json under ${PROJECT}.",
+  "cases": [
+    { "id": "pdf-guard-denies-pipeline", "event": "PreToolUse", "payload": { "tool_name": "mcp__workspace__bash" }, "payload_replace": { "tool_input": { "command": "soffice --headless --convert-to pdf _pipeline/build/report.docx" } },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "deny" }, "json_regex": { "hookSpecificOutput.permissionDecisionReason": "docx only" } } },
+    { "id": "pdf-guard-denies-draft-name", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "payload_replace": { "tool_input": { "command": "libreoffice --convert-to pdf \"Site-DRAFT-v0.1.docx\"" } },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "deny" } } },
+    { "id": "pdf-guard-passes-other", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "payload_replace": { "tool_input": { "command": "soffice --convert-to docx _pipeline/x.odt" } }, "expect": { "stdout": "empty" } },
+    { "id": "pdf-guard-hatch", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "payload_replace": { "tool_input": { "command": "soffice --convert-to pdf _pipeline/a.docx" } }, "env": { "EPLUS_NO_PUNCH_PDF_GUARD": "1" }, "expect": { "stdout": "empty" } },
+
+    { "id": "probe-subagent-start", "event": "SubagentStart", "matcher": "*", "payload": { "agent_type": "punch-subagent:punch-researcher" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${PLUGIN_DATA}/hook-probe.log", "regex": "event=SubagentStart agent_type=punch-subagent:punch-researcher" }, { "path": "${SESSION_DIR}/hook-probe.log", "regex": "SubagentStart" }, { "path": "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt", "regex": "SubagentStart agent=punch-subagent:punch-researcher" } ] } },
+    { "id": "probe-subagent-stop", "event": "SubagentStop", "matcher": "*", "payload": { "agent_type": "punch-subagent:punch-researcher", "last_assistant_message": "abc" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SESSION_DIR}/hook-probe.log", "regex": "event=SubagentStop.*last_assistant_message_len=3" } ] } },
+    { "id": "researcher-final-logged", "event": "SubagentStop", "matcher": "^punch-subagent:punch-researcher$", "payload": { "agent_type": "punch-subagent:punch-researcher", "last_assistant_message": "Found 12 pins. All drafted." },
+      "expect": { "stdout": "empty", "files": [ { "path": "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt", "regex": "^\\[punch-subagent:punch-researcher final\\] Found 12 pins" }, { "path": "${SESSION_DIR}/subagent-final-messages.log", "regex": "punch-subagent:punch-researcher \\(\\d+ chars\\)" } ] } },
+    { "id": "researcher-final-hatch", "event": "SubagentStop", "matcher": "^punch-subagent:punch-researcher$", "payload": { "agent_type": "punch-subagent:punch-researcher", "last_assistant_message": "x" }, "env": { "EPLUS_NO_SUBAGENT_ECHO": "1" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SESSION_DIR}/subagent-final-messages.log", "exists": false } ] } },
+
+    { "id": "voice-check-flags-banned-phrase", "event": "PostToolUse", "matcher": "Write|Edit", "payload": { "tool_name": "Write" },
+      "payload_replace": { "tool_input": { "file_path": "${PROJECT}/drafted_items.json", "content": "" }, "tool_response": { "filePath": "${PROJECT}/drafted_items.json", "type": "create" } },
+      "seed_files": { "${PROJECT}/drafted_items.json": "[{\"number\": 1, \"description\": \"The photograph shows a cracked beam.\"}]" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^\\[punch-report\\] Voice check on drafted_items.json found 1 issue" } } },
+    { "id": "voice-check-clean-file-silent", "event": "PostToolUse", "matcher": "Write|Edit", "payload": { "tool_name": "Write" },
+      "payload_replace": { "tool_input": { "file_path": "${PROJECT}/drafted_items.json", "content": "" }, "tool_response": { "filePath": "${PROJECT}/drafted_items.json", "type": "create" } },
+      "seed_files": { "${PROJECT}/drafted_items.json": "[{\"number\": 1, \"description\": \"Cracked beam at grid B-4.\"}]" },
+      "expect": { "stdout": "empty" } },
+    { "id": "voice-check-hatch", "event": "PostToolUse", "matcher": "Write|Edit", "payload": { "tool_name": "Write" },
+      "payload_replace": { "tool_input": { "file_path": "${PROJECT}/drafted_items.json", "content": "" } },
+      "seed_files": { "${PROJECT}/drafted_items.json": "[{\"number\": 1, \"description\": \"The photograph shows x.\"}]" }, "env": { "EPLUS_NO_PUNCH_VOICE_CHECK": "1" },
+      "expect": { "stdout": "empty" } },
+
+    { "id": "verify-nudge-after-render", "event": "PostToolUse", "matcher": "Bash|PowerShell|mcp__workspace__bash", "payload": { "tool_name": "mcp__workspace__bash" }, "payload_replace": { "tool_input": { "command": "node scripts/gen_report.js build/" }, "tool_response": "ok" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^\\[punch-report\\] The report was just rendered" } } },
+    { "id": "verify-nudge-pipeline-silent", "event": "PostToolUse", "matcher": "Bash|PowerShell|mcp__workspace__bash", "payload": { "tool_name": "mcp__workspace__bash" }, "payload_replace": { "tool_input": { "command": "bash run_pipeline.sh && node gen_report.js" }, "tool_response": "ok" },
+      "expect": { "stdout": "empty" } },
+    { "id": "verify-nudge-hatch", "event": "PostToolUse", "matcher": "Bash|PowerShell|mcp__workspace__bash", "payload": { "tool_name": "mcp__workspace__bash" }, "payload_replace": { "tool_input": { "command": "node gen_report.js" }, "tool_response": "ok" }, "env": { "EPLUS_NO_PUNCH_VERIFY_NUDGE": "1" },
+      "expect": { "stdout": "empty" } },
+
+    { "id": "probe-agent-tool-done", "event": "PostToolUse", "matcher": "Agent", "payload": { "tool_name": "Agent" }, "payload_replace": { "tool_input": { "subagent_type": "punch-subagent:punch-researcher", "prompt": "x", "description": "d" }, "tool_response": { "status": "done" } },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SESSION_DIR}/hook-probe.log", "regex": "event=PostToolUse.*tool_name=Agent" } ] } },
+
+    { "id": "banner-drain-index0", "event": "MessageDisplay", "payload": { "index": 0, "delta": "Done." },
+      "seed_files": { "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt": "10:00:00Z SubagentStart agent=a\n10:00:05Z SubagentStop agent=a final_msg_chars=3\n" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.displayContent": "^\\[\\[punch-hooks\\]\\] 2 event\\(s\\): 10:00:00Z SubagentStart agent=a ; 10:00:05Z SubagentStop agent=a final_msg_chars=3\\n\\nDone\\.$" } } },
+    { "id": "banner-empty-queue", "event": "MessageDisplay", "payload": { "index": 0, "delta": "x" }, "expect": { "stdout": "empty" } }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "permission_mode": "default",
+  "hook_event_name": "Elicitation",
+  "mcp_server_name": "hooklab-mcp-server",
+  "message": "Please provide your credentials",
+  "mode": "form",
+  "requested_schema": {
+    "type": "object",
+    "properties": {
+      "username": { "type": "string", "title": "Username" }
+    }
+  }
+}

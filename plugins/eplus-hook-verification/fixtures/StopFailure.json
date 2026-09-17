@@ -1,0 +1,9 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "hook_event_name": "StopFailure",
+  "error": "rate_limit",
+  "error_details": "429 Too Many Requests",
+  "last_assistant_message": "API Error: Rate limit reached"
+}

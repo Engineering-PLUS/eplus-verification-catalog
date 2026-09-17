@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "plugin": "error-reporting-managed",
+  "cases": [
+    { "id": "probe-managed-form", "event": "PreToolUse", "payload": { "tool_name": "mcp__error-reporting__report_issue" }, "payload_replace": { "tool_input": {} },
+      "expect": { "stdout": "json", "json_regex": { "systemMessage": "^\\[tool-name-probe\\] report_issue tool name = mcp__error-reporting__report_issue\\s+\\(managed MCP server\\)$" } } },
+    { "id": "probe-bundled-form", "event": "PreToolUse", "payload": { "tool_name": "mcp__plugin_error-reporting_error-reporting__report_issue" }, "payload_replace": { "tool_input": {} },
+      "expect": { "stdout": "json", "json_regex": { "systemMessage": "\\(plugin-bundled MCP\\)$" } } },
+    { "id": "probe-other-tool-silent", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "expect": { "stdout": "empty" } },
+    { "id": "probe-hatch", "event": "PreToolUse", "payload": { "tool_name": "mcp__error-reporting__report_issue" }, "env": { "EPLUS_NO_TOOLNAME_PROBE": "1" }, "expect": { "stdout": "empty" } }
+  ]
+}

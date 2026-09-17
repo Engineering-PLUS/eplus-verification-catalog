@@ -1,0 +1,9 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "hook_event_name": "InstructionsLoaded",
+  "file_path": "/tmp/hook-lab/project/CLAUDE.md",
+  "memory_type": "Project",
+  "load_reason": "session_start"
+}

@@ -1,0 +1,21 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolBatch",
+  "tool_calls": [
+    {
+      "tool_name": "Read",
+      "tool_input": { "file_path": "/tmp/hook-lab/project/src/accounts.py" },
+      "tool_use_id": "toolu_hooklab_004",
+      "tool_response": "     1\tfrom __future__ import annotations\n     2\t..."
+    },
+    {
+      "tool_name": "Read",
+      "tool_input": { "file_path": "/tmp/hook-lab/project/src/transactions.py" },
+      "tool_use_id": "toolu_hooklab_005",
+      "tool_response": "     1\tfrom __future__ import annotations\n     2\t..."
+    }
+  ]
+}

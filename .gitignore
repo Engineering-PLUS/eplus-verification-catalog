@@ -1,0 +1,8 @@
+# local editor and scratch material
+/.vscode/
+/.claude/
+/docs/
+Thumbs.db
+
+# suite output if anyone runs the dev-box command with an OutDir inside the repo
+/hook-verification/

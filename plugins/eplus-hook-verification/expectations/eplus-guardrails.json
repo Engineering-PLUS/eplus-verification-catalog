@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "plugin": "eplus-guardrails",
+  "cases": [
+    { "id": "nudge-default", "event": "PostToolUseFailure", "payload": { "tool_name": "Bash", "error": "x" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^\\[tool-failure-reporter\\] The previous tool call failed" } } },
+    { "id": "nudge-hatch", "event": "PostToolUseFailure", "payload": { "tool_name": "Bash", "error": "x" }, "env": { "CLAUDE_HOOKLAB_NO_ERROR_NUDGE": "1" }, "expect": { "stdout": "empty" } }
+  ]
+}

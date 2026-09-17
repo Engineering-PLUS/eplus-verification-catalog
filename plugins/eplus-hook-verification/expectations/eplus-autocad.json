@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "plugin": "eplus-autocad",
+  "notes": "Inline echo commands with POSIX single-quote escaping. Under PowerShell on the Windows host the apostrophe escape may not survive; the cases assert the intended output so a quoting defect shows as FAIL.",
+  "cases": [
+    { "id": "startup-echo", "event": "SessionStart", "payload": { "source": "startup" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^eplus-autocad plugin active" } } },
+    { "id": "select-in-session-asks", "event": "PreToolUse", "payload": { "tool_name": "mcp__autocad__select_in_session" }, "payload_replace": { "tool_input": { "handle": "1A2" } },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "ask" }, "json_regex": { "hookSpecificOutput.permissionDecisionReason": "engineer's live session" } } },
+    { "id": "bundled-name-asks", "event": "PreToolUse", "payload": { "tool_name": "mcp__plugin_eplus-autocad_autocad__open_for_editing" }, "payload_replace": { "tool_input": {} },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "ask" } } }
+  ]
+}

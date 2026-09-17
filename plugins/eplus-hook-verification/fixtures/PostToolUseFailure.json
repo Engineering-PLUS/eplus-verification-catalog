@@ -1,0 +1,16 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUseFailure",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "npm test",
+    "description": "Run test suite"
+  },
+  "tool_use_id": "toolu_hooklab_003",
+  "error": "Exit code 1\nError: Cannot find module 'express'",
+  "is_interrupt": false,
+  "duration_ms": 4187
+}

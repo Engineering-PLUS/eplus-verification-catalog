@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "plugin": "eplus-simple-plugin",
+  "notes": "Inline commands written for a POSIX shell (echo with single quotes, mkdir -p, brace groups, &&). The cases assert the intended behaviour; on the Windows host the SubagentStart/Stop appends are expected to FAIL until rewritten, which is the point of listing them.",
+  "cases": [
+    { "id": "startup-echo", "event": "SessionStart", "payload": { "source": "startup" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^eplus-simple-plugin is loaded" } } },
+    { "id": "pretool-reminder", "event": "PreToolUse", "payload": { "tool_name": "Bash" }, "payload_replace": { "tool_input": { "command": "grep -r foo ." } },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "AEC standard layer naming" } } },
+    { "id": "subagent-start-append", "event": "SubagentStart", "payload": { "agent_type": "eplus-simple-plugin:project-folder-inspector" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${PLUGIN_DATA}/subagent-activity.log", "regex": "project-folder-inspector" } ] } },
+    { "id": "subagent-stop-append", "event": "SubagentStop", "payload": { "agent_type": "eplus-simple-plugin:project-folder-inspector" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${PLUGIN_DATA}/subagent-activity.log", "regex": "project-folder-inspector" } ] } }
+  ]
+}

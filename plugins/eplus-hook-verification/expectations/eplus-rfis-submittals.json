@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "plugin": "eplus-rfis-submittals",
+  "cases": [
+    { "id": "gate-asks-with-ids", "event": "PreToolUse", "payload": { "tool_name": "mcp__rfi-knowledge-hub__commit_approved_rfi" },
+      "payload_replace": { "tool_input": { "rfi_id": "RFI-042", "project_id": "P100", "final_text": "x" } },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "ask" }, "json_regex": { "hookSpecificOutput.permissionDecisionReason": "RFI-042.*P100.*logged permanently" } } },
+    { "id": "gate-asks-bundled-name-no-ids", "event": "PreToolUse", "payload": { "tool_name": "mcp__plugin_eplus-rfis-submittals_rfi-knowledge-hub__commit_approved_rfi" },
+      "payload_replace": { "tool_input": {} },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "ask" }, "json_regex": { "hookSpecificOutput.permissionDecisionReason": "this RFI response" } } },
+    { "id": "gate-hatch", "event": "PreToolUse", "payload": { "tool_name": "mcp__rfi-knowledge-hub__commit_approved_rfi" }, "payload_replace": { "tool_input": { "rfi_id": "RFI-1" } }, "env": { "EPLUS_NO_RFI_COMMIT_GATE": "1" }, "expect": { "stdout": "empty" } },
+
+    { "id": "researcher-brief-logged", "event": "SubagentStop",
+      "payload": { "agent_type": "eplus-rfis-submittals:rfi-researcher", "last_assistant_message": "Evidence brief: spec 03 30 00 para 2.1 governs." },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SESSION_DIR}/subagent-final-messages.log", "regex": "eplus-rfis-submittals:rfi-researcher \\(\\d+ chars\\)[\\s\\S]*excerpt: Evidence brief" } ] } },
+    { "id": "researcher-blank-writes-nothing", "event": "SubagentStop", "payload": { "agent_type": "eplus-rfis-submittals:rfi-researcher", "last_assistant_message": "   " },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SESSION_DIR}/subagent-final-messages.log", "exists": false } ] } },
+    { "id": "researcher-hatch", "event": "SubagentStop", "payload": { "agent_type": "eplus-rfis-submittals:rfi-researcher", "last_assistant_message": "x" }, "env": { "EPLUS_NO_RFI_SUBAGENT_ECHO": "1" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SESSION_DIR}/subagent-final-messages.log", "exists": false } ] } }
+  ]
+}

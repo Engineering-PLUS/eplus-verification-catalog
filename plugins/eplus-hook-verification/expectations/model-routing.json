@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "plugin": "model-routing",
+  "notes": "vo-plugin-catalog model-routing 0.2.0 (routing-digest, routing-hint, fable-gate, routing-probe, show-review-verdict).",
+  "cases": [
+    { "id": "digest", "event": "SessionStart", "payload": { "source": "startup" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^\\[model-routing\\] Worker cost order" } } },
+    { "id": "digest-hatch", "event": "SessionStart", "env": { "EPLUS_NO_ROUTING_HINTS": "1" }, "expect": { "stdout": "empty" } },
+
+    { "id": "hint-client-email", "event": "UserPromptSubmit", "payload": { "prompt": "Draft an email to the client about the change order" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^\\[model-routing\\] This looks like client-facing" } } },
+    { "id": "hint-routine-silent", "event": "UserPromptSubmit", "payload": { "prompt": "list the files in src" }, "expect": { "stdout": "empty" } },
+    { "id": "hint-word-boundary", "event": "UserPromptSubmit", "payload": { "prompt": "fix the reporting module" }, "expect": { "stdout": "empty" } },
+    { "id": "hint-hatch", "event": "UserPromptSubmit", "payload": { "prompt": "client memo" }, "env": { "EPLUS_NO_ROUTING_HINTS": "1" }, "expect": { "stdout": "empty" } },
+
+    { "id": "fable-gate-asks", "event": "PreToolUse", "payload": { "tool_name": "Agent" }, "payload_replace": { "tool_input": { "subagent_type": "model-routing:fable-frontier", "prompt": "x", "description": "d" } },
+      "expect": { "stdout": "json", "json_equals": { "hookSpecificOutput.permissionDecision": "ask" }, "files": [ { "path": "${PLUGIN_DATA}/routing.log", "regex": "subagent_type=model-routing:fable-frontier" }, { "path": "${SESSION_DIR}/routing.log", "regex": "fable-frontier" } ] } },
+    { "id": "fable-gate-opus-passes-logged", "event": "PreToolUse", "payload": { "tool_name": "Agent" }, "payload_replace": { "tool_input": { "subagent_type": "model-routing:opus-deep", "prompt": "x", "description": "d" } },
+      "expect": { "stdout": "empty", "files": [ { "path": "${PLUGIN_DATA}/routing.log", "regex": "opus-deep" } ] } },
+    { "id": "fable-gate-hatch", "event": "PreToolUse", "payload": { "tool_name": "Agent" }, "payload_replace": { "tool_input": { "subagent_type": "model-routing:fable-frontier", "prompt": "x", "description": "d" } }, "env": { "EPLUS_ALLOW_FABLE": "1" },
+      "expect": { "stdout": "empty" } },
+
+    { "id": "probe-subagent-start", "event": "SubagentStart", "payload": { "agent_type": "model-routing:opus-deep" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${PLUGIN_DATA}/routing.log", "regex": "event=SubagentStart agent_type=model-routing:opus-deep" }, { "path": "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt", "regex": "spawned opus-deep" }, { "path": "${SESSION_DIR}/routing.log", "regex": "SubagentStart" } ] } },
+
+    { "id": "review-verdict-logged", "event": "SubagentStop", "payload": { "agent_type": "model-routing:opus-deep", "last_assistant_message": "VERDICT: approve. Two nits." },
+      "expect": { "stdout": "empty", "files": [ { "path": "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt", "regex": "^\\[opus-deep review\\] VERDICT: approve" }, { "path": "${SESSION_DIR}/review-verdicts.log", "regex": "opus-deep \\(\\d+ chars\\)" } ] } },
+    { "id": "review-verdict-hatch", "event": "SubagentStop", "payload": { "agent_type": "model-routing:opus-deep", "last_assistant_message": "x" }, "env": { "EPLUS_NO_REVIEW_ECHO": "1" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${SESSION_DIR}/review-verdicts.log", "exists": false } ] } },
+
+    { "id": "banner-drain-index0", "event": "MessageDisplay", "payload": { "index": 0, "delta": "Hello" },
+      "seed_files": { "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt": "10:00:00Z spawned opus-deep\n[opus-deep review] ok\n" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.displayContent": "^\\[\\[model-routing\\]\\] 10:00:00Z spawned opus-deep ; \\[opus-deep review\\] ok\\n\\nHello$" }, "files": [ { "path": "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt", "exists": false } ] } },
+    { "id": "banner-index1-silent", "event": "MessageDisplay", "payload": { "index": 1, "delta": "x" },
+      "seed_files": { "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt": "t\n" },
+      "expect": { "stdout": "empty", "files": [ { "path": "${PLUGIN_DATA}/${SESSION_ID}/pending-banner.txt" } ] } },
+    { "id": "banner-empty-queue", "event": "MessageDisplay", "payload": { "index": 0, "delta": "x" }, "expect": { "stdout": "empty" } }
+  ]
+}

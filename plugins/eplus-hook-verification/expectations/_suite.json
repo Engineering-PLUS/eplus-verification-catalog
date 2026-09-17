@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "skip_plugins": ["hook-testing-plugin", "eplus-hook-verification"],
+  "budget_seconds": 240,
+  "case_timeout_ms": 20000,
+  "notes": "budget_seconds must stay below the hooks.json timeout (300) so the runner always returns its summary; case_timeout_ms bounds one handler spawn. Plugins listed in skip_plugins are inventoried but never replayed."
+}

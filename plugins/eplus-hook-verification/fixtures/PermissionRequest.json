@@ -1,0 +1,20 @@
+{
+  "session_id": "hooklab-session-0001",
+  "transcript_path": "/tmp/hook-lab/transcript.jsonl",
+  "cwd": "/tmp/hook-lab/project",
+  "permission_mode": "default",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "rm -rf node_modules",
+    "description": "Remove node_modules directory"
+  },
+  "permission_suggestions": [
+    {
+      "type": "addRules",
+      "rules": [{ "toolName": "Bash", "ruleContent": "rm -rf node_modules" }],
+      "behavior": "allow",
+      "destination": "localSettings"
+    }
+  ]
+}

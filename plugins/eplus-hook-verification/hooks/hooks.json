@@ -1,0 +1,42 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "& \"${CLAUDE_PLUGIN_ROOT}\\scripts\\run-suite.ps1\"",
+            "shell": "powershell",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "& \"${CLAUDE_PLUGIN_ROOT}\\scripts\\run-suite.ps1\"",
+            "shell": "powershell",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
+    "UserPromptExpansion": [
+      {
+        "matcher": "verify-hooks",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "& \"${CLAUDE_PLUGIN_ROOT}\\scripts\\run-suite.ps1\"",
+            "shell": "powershell",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}
