@@ -22,6 +22,7 @@ production feature.
 | Plugin | Purpose |
 |---|---|
 | `plugins/eplus-hook-verification` | `/eplus-hook-verification:verify-hooks` replays every hook wiring of every installed plugin on the seat against fixtures and expectations, on the Windows host, and writes the results into the session folder the exporter zips. See its README and skill. |
+| `plugins/eplus-acceptance` | `/eplus-acceptance:run` is the live layer: the model exercises each plugin for real in the session (test reports, workers, connector reads, presence) and writes `acceptance-report.md` with one evidence-backed row per check. No hooks. Run after `verify-hooks`. |
 
 The old always-on generic logger (`hook-testing-plugin` in vo-plugin-catalog) stays
 where it is, disabled, as reference. Do not edit it; copy from it.
@@ -39,7 +40,8 @@ the marketplace and enables the plugin:
     }
   },
   "enabledPlugins": {
-    "eplus-hook-verification@eplus-verification": true
+    "eplus-hook-verification@eplus-verification": true,
+    "eplus-acceptance@eplus-verification": true
   }
 }
 ```

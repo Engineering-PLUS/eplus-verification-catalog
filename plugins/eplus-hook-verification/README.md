@@ -77,11 +77,21 @@ Prints `report.md` and writes the same artifacts under `<OutDir>\hook-verificati
 
 ## Field status
 
-Unverified on a seat. First export to check after enabling on the testing profile:
-which trigger event carried the run (`summary.json` `trigger_event`), whether the
-300 s `timeout` was honoured, whether `CLAUDE_CODE_SESSION_ID` and
-`CLAUDE_CODE_PLUGIN_CACHE_DIR` reached the hook (`env_probe`), which install layout
-was discovered (`inventory.json`), and whether the run folder made it into the zip.
+First field run 2026-09-17 (export 1789684357094, testing profile, desktop 1.52386.x):
+
+- The slash command reached the `UserPromptSubmit` hook as raw text; that trigger
+  carried the run. The 300 s timeout held (run took 77 s for 144 checks). The model
+  reproduced the summary and read `report.md` from the host path.
+- `CLAUDE_CODE_SESSION_ID`, `CLAUDE_PLUGIN_DATA` and `CLAUDE_PROJECT_DIR` were present
+  in the hook environment; `CLAUDE_CODE_PLUGIN_CACHE_DIR` was not.
+- The run folder and `hook-verification.log` were in the export zip.
+- Live plugins under `marketplaces\` all passed. Every failure came from stale copies
+  under `cache\` (older versions, and a marketplace no longer registered). 0.1.1 lists
+  those as stale and does not replay them unless `--include-cache` is given.
+- Every script on the seat had CRLF endings (the seat's git checkout converts them);
+  0.1.1 no longer warns about CRLF in `.ps1`.
+- `--live` counted nothing: the transcript is open for writing and the read failed
+  silently. 0.1.1 opens it shared and records the line count or the error.
 
 ## Versioning
 

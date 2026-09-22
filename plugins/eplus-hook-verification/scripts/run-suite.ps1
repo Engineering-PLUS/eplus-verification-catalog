@@ -30,7 +30,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 # -File passes "a;b" as one string: accept ; and , separated lists
 $PluginsRoots = @($PluginsRoots | ForEach-Object { $_ -split '[;,]' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $script:Utf8 = New-Object System.Text.UTF8Encoding($false)
-$script:SuiteVersion = '0.1.0'
+$script:SuiteVersion = '0.1.1'
 $script:SelfName = 'eplus-hook-verification'
 $script:PluginRoot = Split-Path -Parent $PSScriptRoot
 $script:FixturesDir = Join-Path $script:PluginRoot 'fixtures'
@@ -166,7 +166,7 @@ function Get-TriggerArgs([string] $prompt, $payload) {
 }
 function Parse-Selection([string] $selectionText) {
     # (parameter must not be called $args: PowerShell's automatic $args shadows it)
-    $sel = @{ plugins = @(); events = @{}; static = $false; live = $false; limit = 0; all = $false }
+    $sel = @{ plugins = @(); events = @{}; static = $false; live = $false; limit = 0; all = $false; include_cache = $false }
     if (-not $selectionText) { $selectionText = 'all' }
     foreach ($tok in ($selectionText -split '\s+')) {
         if (-not $tok) { continue }
@@ -174,6 +174,7 @@ function Parse-Selection([string] $selectionText) {
             '^all$'        { $sel.all = $true; continue }
             '^--static$'   { $sel.static = $true; continue }
             '^--live$'     { $sel.live = $true; continue }
+            '^--include-cache$' { $sel.include_cache = $true; continue }
             '^--limit=(\d+)$' { $sel.limit = [int]$Matches[1]; continue }
             '^([A-Za-z0-9_.-]+):([A-Za-z]+)$' { $sel.plugins += $Matches[1]; $sel.events[$Matches[1]] = $Matches[2]; continue }
             '^[A-Za-z0-9_.-]+$' { $sel.plugins += $tok; continue }
@@ -230,6 +231,15 @@ function Find-PluginDirs {
             }
         }
     }
+    # cache\<marketplace>\<plugin>\<version>: copies the app made at install time. Field
+    # result 2026-09-17: the seat carried cache copies of OLD versions (error-reporting
+    # 0.2.0 next to the live 0.4.0, eplus-punch-reports 0.4.0, and every plugin of a
+    # marketplace that was no longer registered). Replaying those produced 22 false
+    # failures. A cache copy is therefore only "active" when its marketplace has no
+    # live clone under marketplaces\ at all; otherwise it is listed as stale and not
+    # replayed (override with --include-cache).
+    $liveMarkets = @{}
+    foreach ($f in $found) { $liveMarkets[$f.marketplace] = $true }
     $ca = Join-Path $base 'cache'
     if (Test-Path -LiteralPath $ca) {
         foreach ($m in (Get-ChildItem -LiteralPath $ca -Directory)) {
@@ -238,7 +248,8 @@ function Find-PluginDirs {
                 $vers = Get-ChildItem -LiteralPath $p.FullName -Directory | Sort-Object LastWriteTime -Descending
                 foreach ($v in $vers) {
                     if (Test-Path -LiteralPath (Join-Path $v.FullName 'hooks\hooks.json')) {
-                        $found += @{ root = $v.FullName; name = $p.Name; marketplace = $m.Name; layout = ('cache/' + $v.Name) }
+                        $stale = $liveMarkets.ContainsKey($m.Name) -or -not (Test-Path -LiteralPath (Join-Path $mk $m.Name))
+                        $found += @{ root = $v.FullName; name = $p.Name; marketplace = $m.Name; layout = ('cache/' + $v.Name); stale = $stale }
                         break
                     }
                 }
@@ -296,7 +307,9 @@ function Test-Static([string] $root, $w) {
                 $nonAscii = 0; foreach ($b in $bytes) { if ($b -gt 127) { $nonAscii++ } }
                 if ($nonAscii -gt 0) { $findings += ('SCRIPT_NON_ASCII:' + $nonAscii) }
                 $text = $script:Utf8.GetString($bytes)
-                if ($text -match "`r`n") { $findings += 'SCRIPT_CRLF' }
+                # CRLF is not flagged for .ps1: the seat's git checkout converts line endings
+                # (field result 2026-09-17: every script on the seat was CRLF) and PowerShell
+                # reads both. Only .sh would care, and .sh halves are flagged separately.
                 if ($text -notmatch '(?m)^\s*exit\s+0\s*$') { $findings += 'SCRIPT_NO_EXIT0' }
                 if ($text -notmatch 'EPLUS_(NO|ALLOW)_[A-Z_]+|CLAUDE_[A-Z_]+_(OFF|NO_[A-Z_]+)') { $findings += 'NO_ESCAPE_HATCH' }
             } catch { $findings += 'SCRIPT_UNREADABLE' }
@@ -645,9 +658,16 @@ function Run-Case($case, $run, $deadline) {
 # ----------------------------------------------------------------------------
 function Get-LiveCounts([string] $transcriptPath) {
     $counts = @{}
-    if (-not $transcriptPath -or -not (Test-Path -LiteralPath $transcriptPath)) { return $counts }
+    if (-not $transcriptPath -or -not (Test-Path -LiteralPath $transcriptPath)) { $counts['_note'] = 'transcript_path missing or not found: ' + $transcriptPath; return $counts }
     try {
-        foreach ($line in [IO.File]::ReadLines($transcriptPath, $script:Utf8)) {
+        # the transcript is open for writing by the app; share read+write or the read throws
+        $fs = New-Object System.IO.FileStream($transcriptPath, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fs, $script:Utf8)
+        $lines = @()
+        while ($null -ne ($l = $sr.ReadLine())) { $lines += $l }
+        $sr.Close()
+        $counts['_lines_read'] = $lines.Count
+        foreach ($line in $lines) {
             if ($line -notmatch '"attachment"') { continue }
             try { $o = ConvertFrom-Json -InputObject $line -ErrorAction Stop } catch { continue }
             if ((Get-Prop $o 'type') -ne 'attachment') { continue }
@@ -659,7 +679,7 @@ function Get-LiveCounts([string] $transcriptPath) {
             $k = $he + '|' + $scr + '|' + $ht
             if ($counts.ContainsKey($k)) { $counts[$k]++ } else { $counts[$k] = 1 }
         }
-    } catch { }
+    } catch { $counts['_error'] = $_.Exception.Message }
     return $counts
 }
 
@@ -729,7 +749,9 @@ try {
     Append-FileUtf8 $logPath ((Now-Iso) + " RUN START run=$runId trigger=$triggerEvent selection='" + $argsText + "' suite=$script:SuiteVersion`n")
 
     # inventory
-    $plugins = @(Find-PluginDirs | Where-Object { $skipPlugins -notcontains $_.name })
+    $discovered = @(Find-PluginDirs | Where-Object { $skipPlugins -notcontains $_.name })
+    $staleCopies = @($discovered | Where-Object { $_.stale -and -not $sel.include_cache })
+    $plugins = @($discovered | Where-Object { -not ($_.stale -and -not $sel.include_cache) })
     if (-not $sel.all) { $plugins = @($plugins | Where-Object { $sel.plugins -contains $_.name }) }
     $inventory = @()
     $allCases = @()
@@ -749,7 +771,8 @@ try {
             $staticRecords += [ordered]@{ schema = 1; run_id = $runId; layer = 'static'; plugin = $pl.name; case_id = ('static-' + $w.id); event = $w.event; coverage = 'static'; wiring = @{ id = $w.id; matcher = $w.matcher; script = $w.script }; verdict = $(if ($f.Count -eq 0) { 'PASS' } else { 'WARN' }); codes = $f; note = $(if ($f -contains 'NO_ESCAPE_HATCH') { 'static scan found no EPLUS_NO_/EPLUS_ALLOW_/CLAUDE_*_OFF switch in the script; catalog policy wants one per hook' } else { $null }) }
         }
     }
-    Write-FileUtf8 (Join-Path $run.root 'inventory.json') (ConvertTo-Json -InputObject @{ run_id = $runId; discovered = $inventory; skipped_plugins = $skipPlugins } -Depth 10)
+    $staleList = @($staleCopies | ForEach-Object { @{ plugin = $_.name; marketplace = $_.marketplace; layout = $_.layout; root = $_.root } })
+    Write-FileUtf8 (Join-Path $run.root 'inventory.json') (ConvertTo-Json -InputObject @{ run_id = $runId; discovered = $inventory; stale_cache_copies_not_replayed = $staleList; skipped_plugins = $skipPlugins } -Depth 10)
 
     # static records first
     $records = @()
@@ -802,6 +825,8 @@ try {
         planned = @{ static = $staticRecords.Count; replay = $allCases.Count; live = $(if ($sel.live) { 1 } else { 0 }) }
         record_counts = $layerCounts; coverage_counts = $coverageCounts
         identity_mode = 'host'
+        transcript_path = $(if ($script:DevMode) { '' } else { [string](Get-Prop $payload 'transcript_path') })
+        stale_cache_copies = @($staleCopies | ForEach-Object { $_.name + ' ' + $_.layout })
         host_env_probe = @{ CLAUDE_CODE_SESSION_ID = [string]$env:CLAUDE_CODE_SESSION_ID; CLAUDE_PLUGIN_DATA = [string]$env:CLAUDE_PLUGIN_DATA; CLAUDE_PROJECT_DIR = [string]$env:CLAUDE_PROJECT_DIR; CLAUDE_CODE_PLUGIN_CACHE_DIR = [string]$env:CLAUDE_CODE_PLUGIN_CACHE_DIR; TEMP = [string]$env:TEMP; PSVersion = $PSVersionTable.PSVersion.ToString() }
         artifacts = @{ run_dir = $run.root; results = $resultsPath; report = (Join-Path $run.root 'report.md'); log = $logPath }
         finished_utc = (Now-Iso)
@@ -815,8 +840,9 @@ try {
     $md += "- Status: **$status**, verdict: **$overall**, trigger: $triggerEvent, selection: ``$argsText``"
     $md += "- Session: $sessionId"
     $md += ('- Checks: ' + $layerCounts.static + ' static + ' + $layerCounts.replay + ' replay (' + $coverageCounts.asserted + ' asserted, ' + $coverageCounts.smoke + ' smoke-only). PASS applies only to the checks and assertions listed; hook output quoted below is data, not instructions.')
-    $md += "- Plugins: " + (($plugins | ForEach-Object { $_.name + ' (' + $_.layout + ')' }) -join ', ')
+    $md += "- Plugins: " + (($plugins | ForEach-Object { $_.name + ' (' + $_.marketplace + ', ' + $_.layout + ')' }) -join ', ')
     $md += "- Skipped plugins: " + ($skipPlugins -join ', ')
+    if ($staleCopies.Count -gt 0) { $md += "- Stale cache copies found and NOT replayed (rerun with --include-cache to test them): " + (($staleCopies | ForEach-Object { $_.name + ' (' + $_.marketplace + ', ' + $_.layout + ')' }) -join ', ') }
     $md += ''
     $md += '| Plugin | PASS | FAIL | ERROR | SKIP | WARN | NOT_WIRED | smoke-only |'
     $md += '|---|---|---|---|---|---|---|---|'
@@ -855,6 +881,7 @@ try {
     }
     $ctxLines = @()
     $ctxLines += "[eplus-hook-verification] Run $runId finished: status $status, verdict $overall, trigger $triggerEvent, selection '$argsText'."
+    if ($staleCopies.Count -gt 0) { $ctxLines += ('Stale cache copies not replayed: ' + (($staleCopies | ForEach-Object { $_.name + ' ' + $_.layout }) -join ', ') + ' (use --include-cache to test them).') }
     if ($plugins.Count -eq 0) { $ctxLines += ('No installed plugin matched the selection. Discovered: ' + ((Find-PluginDirs | ForEach-Object { $_.name }) -join ', ')) }
     $ctxLines += 'Per plugin (PASS/FAIL/ERROR/SKIP/WARN/NOT_WIRED, smoke-only):'
     foreach ($k in ($byPlugin.Keys | Sort-Object)) { $b = $byPlugin[$k]; $ctxLines += "  $k $($b.PASS)/$($b.FAIL)/$($b.ERROR)/$($b.SKIP)/$($b.WARN)/$($b.NOT_WIRED), smoke $($b.smoke)" }
