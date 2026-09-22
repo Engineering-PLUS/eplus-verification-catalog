@@ -48,8 +48,9 @@ Run them in this order. `all` runs every card; a plugin name runs one card;
    `Stale cache copies not replayed` line if present. Read `report.md` only with
    Grep for `^| ` lines containing `FAIL` or `ERROR`; quote at most ten.
 4. Derive the **session evidence folder**: the directory that contains the
-   `hook-verification.log` path in the block. Every file this suite writes goes there,
-   because that folder is zipped into the session export.
+   `hook-verification.log` path in the block. Hooks write there and the exporter zips
+   it; you only ever Grep files in it (with the host path), never bash into it, and
+   never write to it.
 
 Verdict: PASS when status is COMPLETE and no live plugin has FAIL or ERROR.
 
@@ -63,9 +64,12 @@ with "connector not enabled on this seat".
 - **2a identity note.** Expected: the session-start line names `DOMAIN\user@MACHINE`.
   Observed: quote it.
 - **2b failure nudge.** Run one bash command that must fail: `cat /eplus-acceptance/does-not-exist`.
-  Expected: a `[error-reporting] An EPLUS tool call just failed` line arrives with the
-  result, ending with the identity sentence. Do not file a report for this failure;
-  it is deliberate.
+  Expected (error-reporting 0.4.1 and later): a short line `[error-reporting] Tool
+  failure #N this session (mcp__workspace__bash, not an EPLUS server tool)` arrives
+  with the result, ending with the identity sentence; on 0.4.0 it is the long
+  `An EPLUS tool call just failed` text instead. Quote whichever arrived. Do not
+  file a report for this failure; it is deliberate. Do not run any other command
+  that could fail during the suite; every extra failure costs a nudge.
 - **2c main-thread report.** Call `report_issue` once with `category: "other"`,
   `message: "acceptance test, main thread"`, `details: "eplus-acceptance card 2c"`,
   `severity: "low"`, and `requested_by` set to the identity from 2a. Expected: result
@@ -135,10 +139,11 @@ Both are skills and commands, no hooks, no connector call needed here.
 
 ## The report
 
-Write two copies of the same Markdown: `acceptance-report.md` in the session
-evidence folder (so it is in the export) and in the session outputs folder (so the
-user sees it in Cowork). Use the Write tool with the host path for the first. Then
-reply with the report body only, nothing before it.
+Write `acceptance-report.md` into the session outputs folder (your working
+directory) with the Write tool, so the user sees it in Cowork. Do not try to write
+into the session evidence folder: on Cowork that folder is read-only to the file
+tools (field result 2026-09-22). Then reply with the report body only, nothing before
+it; the reply is what carries the report into the session export.
 
 ```
 # EPLUS plugin acceptance, <date>, seat <identity from 2a>, session <session id>
