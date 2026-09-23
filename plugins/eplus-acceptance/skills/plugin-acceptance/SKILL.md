@@ -163,7 +163,8 @@ Both are skills and commands, no hooks, no connector call needed here.
   commands and skills. Evidence: the names as listed. Do not run them; a punch run
   costs minutes and a PlanGrid export.
 - **5b punch smoke test.** Only when the user passed `--punch`. Find the skill folder
-  in the VM with one bash call, `find / -name smoke_test.sh -path '*punch*' 2>/dev/null`;
+  in the VM with one bash call, `find / -name smoke_test.sh -path '*punch*' 2>/dev/null; true` (the `; true`
+  matters: `find` exits 1 on unreadable folders, which counts as a tool failure);
   never Glob the host `cowork_plugins` folder, which Cowork refuses as a protected
   location. Then run, in one bash call, `cd <skill folder> && bash scripts/install_deps.sh
   && bash scripts/smoke_test.sh`; the smoke test without the dependencies installed

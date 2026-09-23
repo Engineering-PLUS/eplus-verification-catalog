@@ -29,7 +29,7 @@
         "name": "Victor Ortega",
         "email": "victor.ortega@eplusadvisors.com"
       },
-      "version": "0.1.3",
+      "version": "0.1.4",
       "source": "./plugins/eplus-acceptance",
       "category": "development",
       "tags": ["internal", "testing", "acceptance", "verification"],
