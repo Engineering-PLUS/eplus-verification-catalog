@@ -162,9 +162,15 @@ Both are skills and commands, no hooks, no connector call needed here.
   `/eplus-punch-reports:test-punch` and the office skills appear in your available
   commands and skills. Evidence: the names as listed. Do not run them; a punch run
   costs minutes and a PlanGrid export.
-- **5b punch smoke test.** Only when the user passed `--punch`: run the plugin's
-  `smoke_test.sh` in the sandbox per the punch skill's instructions and record the
-  last line of its output. Otherwise SKIPPED.
+- **5b punch smoke test.** Only when the user passed `--punch`. Find the skill folder
+  in the VM with one bash call, `find / -name smoke_test.sh -path '*punch*' 2>/dev/null`;
+  never Glob the host `cowork_plugins` folder, which Cowork refuses as a protected
+  location. Then run, in one bash call, `cd <skill folder> && bash scripts/install_deps.sh
+  && bash scripts/smoke_test.sh`; the smoke test without the dependencies installed
+  fails on missing modules, which is not a plugin defect. Record the last line and
+  any `[FAIL]` lines. Expected on eplus-punch-reports 0.8.4 and later: `all checks
+  passed`. On 0.8.0 to 0.8.3 `init_workspace.sh behavioural check failed` is the
+  known read-only-mount bug fixed in 0.8.4: record FAIL. Otherwise SKIPPED.
 
 ## The report
 
