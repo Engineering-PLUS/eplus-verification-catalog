@@ -12,8 +12,13 @@ could not observe something, say so; never infer a pass.
 
 ## Budget rules (the main thread is an expensive model)
 
-- Plan the whole run first, then execute. Target under 40 tool calls and at most two
-  subagent spawns for the full suite.
+- Plan the whole run first, then execute. Target under 40 tool calls and at most three
+  subagent spawns for the full suite (2d sonnet-standard, 3b haiku-fast, 4c
+  rfi-researcher; `--quick` needs only the first two). Spawn them in one message so
+  they run in parallel.
+- Subagents deliver their answer through a `SubagentHandback` call; it reaches you as
+  a separate `<agent-message from="...">` prompt, not in the Agent tool result. Read
+  the answer there. Do not message a subagent again to fetch it.
 - Never Read a transcript, a log over 200 lines, or `results.jsonl`. Use Grep with a
   narrow pattern, or `head`-style limits, to pull the one line you need.
 - Do not re-run a step to "make sure". One observation per check.
@@ -47,6 +52,15 @@ Run them in this order. `all` runs every card; a plugin name runs one card;
 3. From the block, record: run id, status, verdict, per-plugin counts, and the
    `Stale cache copies not replayed` line if present. Read `report.md` only with
    Grep for `^| ` lines containing `FAIL` or `ERROR`; quote at most ten.
+   - An `Installed, no hooks to replay` line lists plugins that have nothing to
+     replay (eplus-punch-reports, eplus-office-skills, eplus-acceptance). That is
+     not a coverage gap; cards 5a and 5b cover them. Never describe such a plugin as
+     "only a stale cache copy".
+   - `Live hook counts: NOT AVAILABLE` is expected when the suite ran on the first
+     prompt of the session: Cowork writes the transcript only after that prompt's
+     hooks finish. Record it under "Not observable" and tell the user to send
+     `/eplus-hook-verification:verify-hooks --static --live` as the last prompt of
+     the session if they want the counts. Do not count it as a failure.
 4. Derive the **session evidence folder**: the directory that contains the
    `hook-verification.log` path in the block. Hooks write there and the exporter zips
    it; you only ever Grep files in it (with the host path), never bash into it, and
@@ -104,8 +118,13 @@ with "connector not enabled on this seat".
   If they did, attempt one spawn with `model: "opus"` and record whether a permission
   prompt appeared; then let the user decline it.
 
-Card 2d already covered the sonnet-standard worker; reuse that observation for
-"sonnet worker spawns and returns".
+- **3d sonnet worker.** Card 2d already covered the sonnet-standard worker; reuse
+  that observation for "sonnet worker spawns and returns". No extra spawn.
+- **3e quiet hand-backs.** When the subagents' `<agent-message>` hand-backs arrive,
+  note whether a `[model-routing] Still on` line arrived with them. Expected on
+  eplus-model-routing 0.1.5 and later: none; the reminder is only for prompts the
+  user types. On 0.1.4 one arrives per hand-back (known, fixed in 0.1.5): record
+  FAIL with the count.
 
 ### Card 4: eplus-rfis-submittals
 
@@ -113,7 +132,12 @@ Tools: `mcp__rfi-knowledge-hub__*`. If not listed, SKIPPED rows.
 
 - **4a read tool.** Call the cheapest read-only search tool the connector offers with
   a one-word query (`"concrete"`), limit 1 if the tool allows. Expected: a well-formed
-  result, empty or not. Evidence: the top-level keys of the result.
+  result, empty or not. Evidence: the top-level keys of the result. Also count the
+  hits against the limit you passed. `grep_corpus` documents "up to max_hits
+  matches"; if it returned more, the row stays PASS (the plugin is fine) and you add
+  a line under "Failures and what to do": "server-side: rfi-knowledge-hub
+  grep_corpus returned <n> hits for max_hits <k>". Known since 2026-09-23: it
+  returns a whole file's hits (up to 3) before checking the limit.
 - **4b commit gate.** Do NOT call `commit_approved_rfi`. The gate returns an ask that
   would prompt the user and, if approved, write to the knowledge base. Verdict:
   SKIPPED "manual: would prompt and write". The hook replay in card 1 already proved
@@ -121,9 +145,14 @@ Tools: `mcp__rfi-knowledge-hub__*`. If not listed, SKIPPED rows.
 - **4c researcher echo.** Only with `all`: spawn `eplus-rfis-submittals:rfi-researcher`
   with the task "Answer in one sentence: what does the knowledge base hold about
   'concrete'? Search once, do not browse." Expected: after it returns, the file
-  `subagent-final-messages.log` exists in the session evidence folder (card 1 step 4)
-  and its last header line names `eplus-rfis-submittals:rfi-researcher`. Check with
-  Grep on that file, pattern `rfi-researcher`, not by reading it.
+  `subagent-final-messages.log` exists in the session evidence folder (card 1 step 4),
+  its last header line names `eplus-rfis-submittals:rfi-researcher`, and the
+  `excerpt:` line under it is the researcher's actual answer (the sentence it handed
+  back to you), not a stub such as "Report delivered.". Check with one Grep on that
+  file, pattern `rfi-researcher`, with 1 line of context after, not by reading it.
+  On eplus-rfis-submittals 0.4.1 and later the header ends `source=handback`; a
+  stub excerpt or `source=last_message` there is FAIL. On 0.4.0 the header has no
+  `source=` and the excerpt is the stub (known, fixed in 0.4.1): record FAIL.
 
 ### Card 5: eplus-punch-reports and eplus-office-skills
 

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plugin": "eplus-model-routing",
-  "notes": "eplus-plugin-catalog eplus-model-routing 0.1.x. note-model and route-check store per-session files under TEMP (redirected into the sandbox).",
+  "notes": "eplus-plugin-catalog eplus-model-routing 0.1.x (route-agent-message-silent and route-task-notification-silent need 0.1.5+). note-model and route-check store per-session files under TEMP (redirected into the sandbox).",
   "cases": [
     { "id": "note-model-cowork-shape", "event": "SessionStart", "payload": { "source": "startup" },
       "expect": { "stdout": "empty", "files": [ { "path": "${TEMP}/eplus-model-routing/${SESSION_ID}/payload-keys.txt", "regex": "SessionStart keys: .*session_id" } ] } },
@@ -19,6 +19,17 @@
       "seed_files": { "${TEMP}/eplus-model-routing/${SESSION_ID}/model.txt": "claude-sonnet-5\n" },
       "expect": { "stdout": "empty" } },
     { "id": "route-hatch", "event": "UserPromptSubmit", "payload": { "prompt": "hello" }, "env": { "EPLUS_NO_MODEL_ROUTING": "1" }, "expect": { "stdout": "empty" } },
+    { "id": "route-opus-later-prompt-reminder", "event": "UserPromptSubmit", "payload": { "prompt": "next step please" },
+      "seed_files": { "${TEMP}/eplus-model-routing/${SESSION_ID}/model.txt": "claude-opus-5\n", "${TEMP}/eplus-model-routing/${SESSION_ID}/routed.flag": "claude-opus-5\n" },
+      "expect": { "stdout": "json", "json_regex": { "hookSpecificOutput.additionalContext": "^\\[model-routing\\] Still on claude-opus-5" } } },
+    { "id": "route-agent-message-silent", "event": "UserPromptSubmit",
+      "payload": { "prompt": "<agent-message from=\"a3facd7fcd342eae3\">\n[Subagent hand-back] The text below is the final report of a subagent this session delegated to.\nREADY\n</agent-message>" },
+      "seed_files": { "${TEMP}/eplus-model-routing/${SESSION_ID}/model.txt": "claude-opus-5\n", "${TEMP}/eplus-model-routing/${SESSION_ID}/routed.flag": "claude-opus-5\n" },
+      "expect": { "stdout": "empty" } },
+    { "id": "route-task-notification-silent", "event": "UserPromptSubmit",
+      "payload": { "prompt": "<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n</task-notification>" },
+      "seed_files": { "${TEMP}/eplus-model-routing/${SESSION_ID}/model.txt": "claude-opus-5\n", "${TEMP}/eplus-model-routing/${SESSION_ID}/routed.flag": "claude-opus-5\n" },
+      "expect": { "stdout": "empty" } },
 
     { "id": "gate-sonnet-passes-logged", "event": "PreToolUse", "payload": { "tool_name": "Agent" },
       "payload_replace": { "tool_input": { "subagent_type": "eplus-model-routing:sonnet-standard", "model": "sonnet", "prompt": "x", "description": "d" } },

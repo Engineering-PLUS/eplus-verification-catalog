@@ -44,6 +44,9 @@ it runs on, and leaves the evidence where the session export picks it up.
 3. **Live** (`--live`): counts the `hook_*` attachments already in this session's
    transcript by event and script, so you can see which wirings have fired for real.
    Silent hooks (exit 0, no stdout) leave no attachment, so absence is not proof.
+   On the first prompt of a session there is no transcript yet (Cowork writes it
+   after that prompt's hooks finish), so the summary says `Live hook counts: NOT
+   AVAILABLE`; rerun as a later prompt with `--static --live` for the counts.
 
 ## Cases and expectations
 

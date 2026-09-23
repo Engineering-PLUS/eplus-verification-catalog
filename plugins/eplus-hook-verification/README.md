@@ -93,6 +93,19 @@ First field run 2026-09-17 (export 1789684357094, testing profile, desktop 1.523
 - `--live` counted nothing: the transcript is open for writing and the read failed
   silently. 0.1.1 opens it shared and records the line count or the error.
 
+Field run 2026-09-23 (export 1790148676704, 0.1.1): 51 of 51 checks passed.
+
+- `--live` on the session's FIRST prompt found no transcript: Cowork writes it only
+  after that prompt's hooks return. 0.1.2 says so in plain words (`Live hook counts:
+  NOT AVAILABLE`) and points at `/eplus-hook-verification:verify-hooks --static --live`
+  as a later prompt; it no longer claims the counts were taken.
+- eplus-punch-reports has no hooks, so it was missing from the plugin list and the
+  model called it "only a stale cache copy". 0.1.2 lists installed plugins without
+  hooks (`Installed, no hooks to replay`) in the summary, `report.md`,
+  `summary.json` and `inventory.json`.
+- Subagent hand-backs reach `UserPromptSubmit` as queued prompts starting with
+  `<agent-message from="...">`. 0.1.2 never treats one as a trigger.
+
 ## Versioning
 
 Version lives in the catalog's `.claude-plugin/marketplace.json` entry; bump it

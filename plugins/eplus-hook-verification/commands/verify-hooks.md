@@ -35,4 +35,7 @@ hook, and a PreToolUse hook on the Glob tool. Do the following, in order:
 Arguments: `all` (default), one or more plugin names, `<plugin>:<Event>` for one
 event of one plugin, `--static` for the file and wiring checks only (no replay),
 `--live` to also count which hooks have fired organically in this session from
-the transcript, `--limit=N` to cap the number of replay cases.
+the transcript, `--limit=N` to cap the number of replay cases. `--live` needs a
+transcript on disk, which Cowork writes only after the first prompt's hooks
+finish: as the first prompt of a session it reports the counts as not available.
+For counts, send `--static --live` as a later prompt (no replay, a few seconds).
