@@ -11,6 +11,9 @@ stay enabled on testing profiles.
 | Component | Path | Purpose |
 |---|---|---|
 | Command | [`commands/run.md`](commands/run.md) | `/eplus-acceptance:run [all | --quick | <plugin>] [--egress-host <host>] [--punch] [--gate]` |
+| Command | [`commands/test-punch.md`](commands/test-punch.md) | `/eplus-acceptance:test-punch [project] [days back]`: scripted smoke test of the punch workspace flow, build rules, packaging and the `plangrid` MCP route; results table in `punch-test/TEST-RESULTS.md`. Moved from eplus-punch-reports. |
+| Command | [`commands/routing-test.md`](commands/routing-test.md) | `/eplus-acceptance:routing-test`: model detection, one haiku-fast and one sonnet-standard spawn, one gated Opus spawn (decline the prompt). Moved from eplus-model-routing. |
+| Command | [`commands/model-check.md`](commands/model-check.md) | `/eplus-acceptance:model-check`: two lines, the env model and whether the routing note arrived. Moved from eplus-model-routing. |
 | Skill | [`skills/plugin-acceptance/SKILL.md`](skills/plugin-acceptance/SKILL.md) | The check cards per plugin, the evidence rules, the budget rules, the report format |
 
 ## What a run does
