@@ -158,10 +158,10 @@ Tools: `mcp__rfi-knowledge-hub__*`. If not listed, SKIPPED rows.
 
 Both are skills and commands, no hooks, no connector call needed here.
 
-- **5a presence.** Expected: the slash command `/eplus-punch-reports:punch-report`
-  and the office skills appear in your available commands and skills, and no
-  `test-punch`, `routing-test` or `model-check` is listed under a production plugin
-  (they moved to eplus-acceptance). Evidence: the names as listed. Do not run them;
+- **5a presence.** Expected: the skills `eplus-punch-reports:punch-report` and
+  `eplus-punch-reports:punch-history` and the office skills appear in your available
+  skills; eplus-punch-reports lists no commands, and no `test-punch`, `routing-test`
+  or `model-check` is listed under a production plugin (they moved to eplus-acceptance). Evidence: the names as listed. Do not run them;
   a punch run costs minutes and a PlanGrid export.
 - **5b punch smoke test.** Only when the user passed `--punch`. Find the skill folder
   in the VM with one bash call, `find / -name smoke_test.sh -path '*punch*' 2>/dev/null; true` (the `; true`

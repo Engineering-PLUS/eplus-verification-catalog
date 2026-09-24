@@ -11,8 +11,8 @@ matter as much as the steps.
 
 ## Rules
 
-- Do not load any skill (not `punch-report-generation`, not `punch`, not
-  `plangrid-extraction`). The only MCP calls allowed are the four in steps 9
+- Do not load any skill (not `punch-report`, not `punch-history`, not
+  `plangrid-punch-extraction`). The only MCP calls allowed are the four in steps 9
   to 12, one call each. Never write a tool result to a file: step 13 fetches
   the packets.
 - Do not read, cat, grep, or open any plugin file. Everything you need is here.
@@ -36,7 +36,7 @@ Nobody has to know task numbers; the server finds the recent ones.
 **1. Build the workspace** (Bash, one command):
 
 ```bash
-W="$(pwd)/punch-test"; R="${CLAUDE_PLUGIN_ROOT}"; [ -d "$R/skills/punch-report-generation" ] || R=$(ls -d /sessions/*/mnt/*/.local-plugins/*/*/plugins/eplus-punch-reports 2>/dev/null | head -1); rm -rf "$W"; mkdir -p "$W/ws/plangrid_mcp" "$W/project" && bash "$R/skills/punch-report-generation/scripts/init_workspace.sh" "$W/ws" | tail -3 && printf 'x' > "$W/ws/_pipeline/build/TEST-DRAFT-v0.1.docx" && echo "workspace ok: $W" && ls "$W/ws/_pipeline"
+W="$(pwd)/punch-test"; R="${CLAUDE_PLUGIN_ROOT}"; [ -d "$R/skills/punch-report" ] || R=$(ls -d /sessions/*/mnt/*/.local-plugins/*/*/plugins/eplus-punch-reports 2>/dev/null | head -1); rm -rf "$W"; mkdir -p "$W/ws/plangrid_mcp" "$W/project" && bash "$R/skills/punch-report/scripts/init_workspace.sh" "$W/ws" | tail -3 && printf 'x' > "$W/ws/_pipeline/build/TEST-DRAFT-v0.1.docx" && echo "workspace ok: $W" && ls "$W/ws/_pipeline"
 ```
 
 If `pwd` is not the outputs folder, replace `$(pwd)` with the outputs folder
